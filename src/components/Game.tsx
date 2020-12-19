@@ -17,18 +17,16 @@ type Square = {
   color: 'b' | 'w';
 };
 
-const lightSquareColor = 'bg-yellow-100';
-const darkSquareColor = 'bg-yellow-600';
+const lightSquareColor = 'yellow-100';
+const darkSquareColor = 'yellow-600';
 
-const getSquareColor = (x: number, y: number) => {
+const getSquareColor = (x: number, y: number, prefix: string = 'bg-') => {
   // const { lightSquareColor, darkSquareColor } = this.props;
   const odd = x % 2;
-
   if (y % 2) {
-    return odd ? lightSquareColor : darkSquareColor;
+    return `${prefix}${odd ? lightSquareColor : darkSquareColor}`;
   }
-
-  return odd ? darkSquareColor : lightSquareColor;
+  return `${prefix}${odd ? darkSquareColor : lightSquareColor}`;
 };
 
 const squareToPiece = (square: Square | null, possibleMove: boolean, size: number) => {
@@ -99,33 +97,47 @@ const Game = ({ tileSize }: Props) => {
   };
 
   return (
-    <div className="flex flex-col border-2 border-gray-900 relative">
-      {board.map((row: Square[], y: number) => (
-        <div key={y} className="flex">
-          {row.map((square, x) => {
-            const sq: string = getSquare(x, y);
-            const isMove: boolean = squareInMoves(moves, sq);
-            return (
-              // eslint-disable-next-line jsx-a11y/click-events-have-key-events
-              <div
-                key={`${y}-${x}`}
-                className={`flex justify-center outline-none relative ${getSquareColor(x, y)}`}
-                onClick={() => (!isMove ? setActiveSquare(sq) : makeMove(sq))}
-                role="button"
-                tabIndex={0}
-              >
-                <div
-                  className={classNames('absolute top-0 left-0 w-full h-full', {
-                    'move-dest': isMove && !square,
-                    'move-take': isMove && square,
-                  })}
-                />
-                {squareToPiece(square, isMove, tileSize as number)}
-              </div>
-            );
-          })}
+    <div className="relative">
+      <div className="flex flex-col board-shadow relative">
+        {/* TODO: memoize */}
+        <div className="absolute flex flex-col-reverse top-1 right-0 h-full z-10 w-3 text-xs md:text-sm select-none md:font-bold">
+          {[1, 2, 3, 4, 5, 6, 7, 8].map((column) => (
+            <div className={`flex flex-auto ${getSquareColor(8, column, 'text-')}`}>{column}</div>
+          ))}
         </div>
-      ))}
+        <div className="absolute flex bottom-1 left-0 w-full z-10 h-4 text-left text-xs md:text-sm select-none md:font-bold">
+          {['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'].map((file, i) => (
+            <div className={`flex flex-auto pl-1 ${getSquareColor(i, 8, 'text-')}`}>{file}</div>
+          ))}
+        </div>
+        {board.map((row: Square[], y: number) => (
+          <div key={y} className="flex">
+            {row.map((square, x) => {
+              const sq: string = getSquare(x, y);
+              const isMove: boolean = squareInMoves(moves, sq);
+              return (
+                // eslint-disable-next-line jsx-a11y/click-events-have-key-events
+                <div
+                  key={`${y}-${x}`}
+                  className={`flex justify-center outline-none relative ${getSquareColor(x, y)}`}
+                  onClick={() => (!isMove ? setActiveSquare(sq) : makeMove(sq))}
+                  role="button"
+                  tabIndex={0}
+                >
+                  <div
+                    className={classNames('absolute top-0 left-0 w-full h-full', {
+                      'move-dest': isMove && !square,
+                      'move-take': isMove && square,
+                    })}
+                  />
+                  {squareToPiece(square, isMove, tileSize as number)}
+                </div>
+              );
+            })}
+          </div>
+        ))}
+      </div>
+      <div className="flex flex-col">hi</div>
     </div>
   );
 };
