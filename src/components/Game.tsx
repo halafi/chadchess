@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import Chess from 'chess.js';
 import classNames from 'classnames';
+import useResizeAware from 'react-resize-aware';
 
 import Bishop from './pieces/Bishop';
 import King from './pieces/King';
@@ -76,13 +77,14 @@ const squareInMoves = (moves: string[], square: string): boolean => {
   return false;
 };
 
-type Props = {
-  tileSize?: number;
-};
+const MAX_WIDTH = 1128;
+const MAX_HEIGHT = 1128;
 
-const Game = ({ tileSize }: Props) => {
+const Game = () => {
   // @ts-ignore
   const [chess, setChess] = useState(new Chess());
+  const [resizeListener, sizes] = useResizeAware();
+
   const [activeSquare, setActiveSquare] = useState<string | null>(null);
   // force update hack
   const [, updateState] = React.useState<any>();
@@ -96,18 +98,38 @@ const Game = ({ tileSize }: Props) => {
     forceUpdate();
   };
 
+  const history = chess.history({ verbose: true });
+
+  if (!sizes || !sizes.width || !sizes.height) return <div>{resizeListener}</div>;
+
+  let tileSize = sizes.height / 8;
+  if (sizes.height > sizes.width) {
+    if (sizes.width >= MAX_WIDTH) {
+      tileSize = MAX_WIDTH / 8;
+    } else {
+      tileSize = sizes.width / 8;
+    }
+  } else if (sizes.width >= MAX_WIDTH) {
+    tileSize = MAX_WIDTH / 8;
+  }
+
   return (
-    <div className="relative">
+    <div className="flex flex-col">
+      {resizeListener}
       <div className="flex flex-col board-shadow relative">
         {/* TODO: memoize */}
         <div className="absolute flex flex-col-reverse top-1 right-0 h-full z-10 w-3 text-xs md:text-sm select-none md:font-bold">
           {[1, 2, 3, 4, 5, 6, 7, 8].map((column) => (
-            <div className={`flex flex-auto ${getSquareColor(8, column, 'text-')}`}>{column}</div>
+            <div key={column} className={`flex flex-auto ${getSquareColor(8, column, 'text-')}`}>
+              {column}
+            </div>
           ))}
         </div>
         <div className="absolute flex bottom-1 left-0 w-full z-10 h-4 text-left text-xs md:text-sm select-none md:font-bold">
           {['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'].map((file, i) => (
-            <div className={`flex flex-auto pl-1 ${getSquareColor(i, 8, 'text-')}`}>{file}</div>
+            <div key={file} className={`flex flex-auto pl-1 ${getSquareColor(i, 8, 'text-')}`}>
+              {file}
+            </div>
           ))}
         </div>
         {board.map((row: Square[], y: number) => (
@@ -137,7 +159,14 @@ const Game = ({ tileSize }: Props) => {
           </div>
         ))}
       </div>
-      <div className="flex flex-col">hi</div>
+      {/* <div className="flex flex-wrap shadow min-h-6">
+        {history.map((move: any, i: number) => (
+          <div key={i} className="mr-2 font-bold text-gray-800">
+            <span className="font-normal">{i}. </span>
+            {move.san}
+          </div>
+        ))}
+      </div> */}
     </div>
   );
 };
