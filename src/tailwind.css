@@ -8,7 +8,17 @@
 
 body {
   color: theme('colors.black');
-  background-color: theme('colors.white');
+  background-color: theme('colors.gray.200');
+}
+
+/* Chrome, Safari and Opera */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
 }
 
 /* combination of Normalize.css and some additional base styles */

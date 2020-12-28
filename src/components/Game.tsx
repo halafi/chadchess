@@ -1,7 +1,7 @@
 /* eslint-disable react/no-array-index-key */
 import React, { useState } from 'react';
 import Chess from 'chess.js';
-import classNames from 'classnames';
+import clsx from 'clsx';
 import useResizeAware from 'react-resize-aware';
 
 import Bishop from './pieces/Bishop';
@@ -80,6 +80,8 @@ const squareInMoves = (moves: string[], square: string): boolean => {
 const MAX_WIDTH = 1128;
 const MAX_HEIGHT = 1128;
 
+const moveHistoryRef = React.createRef<HTMLDivElement>();
+
 const Game = () => {
   // @ts-ignore
   const [chess, setChess] = useState(new Chess());
@@ -96,6 +98,11 @@ const Game = () => {
   const makeMove = (to: string) => {
     chess.move({ from: activeSquare, to });
     forceUpdate();
+    setTimeout(() => {
+      if (moveHistoryRef && moveHistoryRef.current) {
+        moveHistoryRef.current.scrollLeft += 1000;
+      }
+    }, 50);
   };
 
   const history = chess.history({ verbose: true });
@@ -114,7 +121,25 @@ const Game = () => {
   }
 
   return (
-    <div className="flex flex-col">
+    <div className="grid grid-cols-1 grid-rows-game-layout">
+      <div
+        className="whitespace-nowrap shadow-inner min-h-6 bg-gray-200 px-2 overflow-x-auto no-scrollbar"
+        ref={moveHistoryRef}
+      >
+        {history.map((move: any, i: number) => (
+          <span
+            key={i}
+            className={clsx('inline-block px-1 font-bold', {
+              'bg-gray-300': i === history.length - 1,
+              'text-gray-400': i < history.length - 1,
+              'text-gray-800': i === history.length - 1,
+            })}
+          >
+            {i % 2 === 0 && <span className="font-normal">{Math.floor(i / 2) + 1}. </span>}
+            {move.san}
+          </span>
+        ))}
+      </div>
       {resizeListener}
       <div className="flex flex-col board-shadow relative">
         {/* TODO: memoize */}
@@ -147,7 +172,7 @@ const Game = () => {
                   tabIndex={0}
                 >
                   <div
-                    className={classNames('absolute top-0 left-0 w-full h-full', {
+                    className={clsx('absolute top-0 left-0 w-full h-full', {
                       'move-dest': isMove && !square,
                       'move-take': isMove && square,
                     })}
@@ -159,14 +184,6 @@ const Game = () => {
           </div>
         ))}
       </div>
-      {/* <div className="flex flex-wrap shadow min-h-6">
-        {history.map((move: any, i: number) => (
-          <div key={i} className="mr-2 font-bold text-gray-800">
-            <span className="font-normal">{i}. </span>
-            {move.san}
-          </div>
-        ))}
-      </div> */}
     </div>
   );
 };
