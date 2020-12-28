@@ -18,19 +18,23 @@ type Square = {
   color: 'b' | 'w';
 };
 
-// bg-yellow-100
-const lightSquareColor = 'yellow-100';
-// bg-yellow-600
-const darkSquareColor = 'yellow-600';
+const darkSquareText = 'text-yellow-600';
+const lightSquareText = 'text-yellow-100';
+const darkSquareBg = 'bg-yellow-600';
+const lightSquareBg = 'bg-yellow-100';
 
-// FIXME: avoid not using full clsnames because of purging
-const getSquareColor = (x: number, y: number, prefix: string = 'bg-') => {
-  // const { lightSquareColor, darkSquareColor } = this.props;
+const getSquareColor = (x: number, y: number, text: boolean) => {
   const odd = x % 2;
   if (y % 2) {
-    return `${prefix}${odd ? lightSquareColor : darkSquareColor}`;
+    if (text) {
+      return odd ? lightSquareText : darkSquareText;
+    }
+    return odd ? lightSquareBg : darkSquareBg;
   }
-  return `${prefix}${odd ? darkSquareColor : lightSquareColor}`;
+  if (text) {
+    return odd ? darkSquareText : lightSquareText;
+  }
+  return odd ? darkSquareBg : lightSquareBg;
 };
 
 const squareToPiece = (square: Square | null, possibleMove: boolean, size: number) => {
@@ -148,14 +152,14 @@ const Game = () => {
         {/* TODO: memoize */}
         <div className="absolute flex flex-col-reverse top-1 right-0 h-full z-10 w-3 text-xs md:text-sm select-none md:font-bold">
           {[1, 2, 3, 4, 5, 6, 7, 8].map((column) => (
-            <div key={column} className={`flex flex-auto ${getSquareColor(8, column, 'text-')}`}>
+            <div key={column} className={`flex flex-auto ${getSquareColor(8, column, true)}`}>
               {column}
             </div>
           ))}
         </div>
         <div className="absolute flex bottom-1 left-0 w-full z-10 h-4 text-left text-xs md:text-sm select-none md:font-bold">
           {['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'].map((file, i) => (
-            <div key={file} className={`flex flex-auto pl-1 ${getSquareColor(i, 8, 'text-')}`}>
+            <div key={file} className={`flex flex-auto pl-1 ${getSquareColor(i, 8, true)}`}>
               {file}
             </div>
           ))}
@@ -169,7 +173,11 @@ const Game = () => {
                 // eslint-disable-next-line jsx-a11y/click-events-have-key-events
                 <div
                   key={`${y}-${x}`}
-                  className={`flex justify-center outline-none relative ${getSquareColor(x, y)}`}
+                  className={`flex justify-center outline-none relative ${getSquareColor(
+                    x,
+                    y,
+                    false,
+                  )}`}
                   onClick={() => (!isMove ? setActiveSquare(sq) : makeMove(sq))}
                   role="button"
                   tabIndex={0}
