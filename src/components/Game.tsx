@@ -18,9 +18,12 @@ type Square = {
   color: 'b' | 'w';
 };
 
+// bg-yellow-100
 const lightSquareColor = 'yellow-100';
+// bg-yellow-600
 const darkSquareColor = 'yellow-600';
 
+// FIXME: avoid not using full clsnames because of purging
 const getSquareColor = (x: number, y: number, prefix: string = 'bg-') => {
   // const { lightSquareColor, darkSquareColor } = this.props;
   const odd = x % 2;
