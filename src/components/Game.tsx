@@ -1,19 +1,15 @@
 /* eslint-disable react/no-array-index-key */
-import React, { useState } from 'react';
+import React, { useState, DragEvent } from 'react';
 import Chess from 'chess.js';
 import clsx from 'clsx';
-
-import Bishop from './pieces/Bishop';
-import King from './pieces/King';
-import Knight from './pieces/Knight';
-import Pawn from './pieces/Pawn';
-import Queen from './pieces/Queen';
-import Rook from './pieces/Rook';
-
+import Piece from './Piece';
 import './Game.css';
 import useWindowSize from '../hooks/useWindowSize';
 
 const breakpoint = 768;
+const squareMap = { 0: 'a', 1: 'b', 2: 'c', 3: 'd', 4: 'e', 5: 'f', 6: 'g', 7: 'h' };
+const positiveDistance = '0.25rem';
+const negativeDistance = '-1.5rem';
 
 interface Square {
   type: 'r' | 'n' | 'b' | 'k' | 'q' | 'p';
@@ -25,16 +21,7 @@ type TileNumber = 1 | 2 | 3 | 4 | 5 | 6 | 7;
 const squareToPiece = (square: Square | null, possibleMove: boolean, size: number) => {
   if (square) {
     const color = square.color === 'b' ? 'black' : 'white';
-    const mapping = {
-      p: <Pawn variant={color} size={size} />,
-      n: <Knight variant={color} size={size} />,
-      b: <Bishop variant={color} size={size} />,
-      r: <Rook variant={color} size={size} />,
-      q: <Queen variant={color} size={size} />,
-      k: <King variant={color} size={size} />,
-    };
-
-    return mapping[square.type];
+    return <Piece type={square.type} color={color} size={size} />;
   }
   // if (possibleMove) {
   //   return <Move size={size} />;
@@ -44,8 +31,7 @@ const squareToPiece = (square: Square | null, possibleMove: boolean, size: numbe
 };
 
 const getSquare = (x: TileNumber, y: number): string => {
-  const mapping = { 0: 'a', 1: 'b', 2: 'c', 3: 'd', 4: 'e', 5: 'f', 6: 'g', 7: 'h' };
-  return `${mapping[x]}${8 - y}`;
+  return `${squareMap[x]}${8 - y}`;
 };
 
 const squareInMoves = (moves: string[], square: string): boolean => {
@@ -97,11 +83,12 @@ const Game = () => {
   const lightSquareText = 'text-yellow-100';
   const darkSquareBg = 'bg-yellow-600';
   const lightSquareBg = 'bg-yellow-100';
+  const black = 'black';
 
   const isSmallerThanBreakpoint = width < breakpoint || height < breakpoint;
 
   const getSquareColor = (x: number, y: number, text: boolean) => {
-    if (text && isSmallerThanBreakpoint) return 'black';
+    if (text && isSmallerThanBreakpoint) return black;
 
     const odd = x % 2;
     if (y % 2) {
@@ -116,7 +103,7 @@ const Game = () => {
     return odd ? darkSquareBg : lightSquareBg;
   };
 
-  const labelDistance = isSmallerThanBreakpoint ? '-1.5rem' : '0.25rem';
+  const labelDistance = isSmallerThanBreakpoint ? negativeDistance : positiveDistance;
 
   return (
     <div className="grid grid-cols-1 grid-rows-game-layout" style={{ maxWidth: 8 * tileSize }}>
@@ -154,13 +141,13 @@ const Game = () => {
           className="absolute flex left-0 w-full z-10 h-4 text-left text-xs md:text-sm select-none md:font-bold"
           style={{ bottom: labelDistance }}
         >
-          {['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'].map((file, i) => (
+          {Object.values(squareMap).map((file, i) => (
             <div key={file} className={`flex flex-auto pl-1 ${getSquareColor(i, 8, true)}`}>
               {file}
             </div>
           ))}
         </div>
-        {board.map((row: Square[], y: number) => (
+        {board.map((row: Square[], y: TileNumber) => (
           <div key={y} className="flex">
             {row.map((square, x) => {
               const sq: string = getSquare(x as TileNumber, y);
@@ -168,7 +155,18 @@ const Game = () => {
               return (
                 // eslint-disable-next-line jsx-a11y/click-events-have-key-events
                 <div
-                  key={`${y}-${x}`}
+                  draggable
+                  onDragStart={() => setActiveSquare(sq)}
+                  onDragEnd={() => setActiveSquare(null)}
+                  onDragOver={(e: DragEvent<HTMLDivElement>) => {
+                    e.preventDefault();
+                  }}
+                  onDrop={(e: DragEvent<HTMLDivElement>) => {
+                    e.preventDefault();
+                    makeMove(sq);
+                  }}
+                  id={sq}
+                  key={sq}
                   className={`flex justify-center outline-none relative ${getSquareColor(
                     x,
                     y,
