@@ -1,63 +1,27 @@
 /* eslint-disable react/no-array-index-key */
-import React, { useState } from 'react';
+import React, { useState, DragEvent } from 'react';
 import Chess from 'chess.js';
 import clsx from 'clsx';
-import useResizeAware from 'react-resize-aware';
-
-import Bishop from './pieces/Bishop';
-import King from './pieces/King';
-import Knight from './pieces/Knight';
-import Pawn from './pieces/Pawn';
-import Queen from './pieces/Queen';
-import Rook from './pieces/Rook';
-
+import Piece from './Piece';
 import './Game.css';
+import useWindowSize from '../hooks/useWindowSize';
 
-type Square = {
+const breakpoint = 768;
+const squareMap = { 0: 'a', 1: 'b', 2: 'c', 3: 'd', 4: 'e', 5: 'f', 6: 'g', 7: 'h' };
+const positiveDistance = '0.25rem';
+const negativeDistance = '-1.5rem';
+
+interface Square {
   type: 'r' | 'n' | 'b' | 'k' | 'q' | 'p';
   color: 'b' | 'w';
-};
+}
 
-const darkSquareText = 'text-yellow-600';
-const lightSquareText = 'text-yellow-100';
-const darkSquareBg = 'bg-yellow-600';
-const lightSquareBg = 'bg-yellow-100';
-
-const getSquareColor = (x: number, y: number, text: boolean) => {
-  const odd = x % 2;
-  if (y % 2) {
-    if (text) {
-      return odd ? lightSquareText : darkSquareText;
-    }
-    return odd ? lightSquareBg : darkSquareBg;
-  }
-  if (text) {
-    return odd ? darkSquareText : lightSquareText;
-  }
-  return odd ? darkSquareBg : lightSquareBg;
-};
+type TileNumber = 1 | 2 | 3 | 4 | 5 | 6 | 7;
 
 const squareToPiece = (square: Square | null, possibleMove: boolean, size: number) => {
   if (square) {
     const color = square.color === 'b' ? 'black' : 'white';
-    if (square.type === 'p') {
-      return <Pawn variant={color} size={size} />;
-    }
-    if (square.type === 'n') {
-      return <Knight variant={color} size={size} />;
-    }
-    if (square.type === 'b') {
-      return <Bishop variant={color} size={size} />;
-    }
-    if (square.type === 'r') {
-      return <Rook variant={color} size={size} />;
-    }
-    if (square.type === 'q') {
-      return <Queen variant={color} size={size} />;
-    }
-    if (square.type === 'k') {
-      return <King variant={color} size={size} />;
-    }
+    return <Piece type={square.type} color={color} size={size} />;
   }
   // if (possibleMove) {
   //   return <Move size={size} />;
@@ -66,37 +30,24 @@ const squareToPiece = (square: Square | null, possibleMove: boolean, size: numbe
   return <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 45 45" width={size} height="100%" />;
 };
 
-const getSquare = (x: number, y: number): string => {
-  let letter = 'a';
-  if (x === 1) letter = 'b';
-  if (x === 2) letter = 'c';
-  if (x === 3) letter = 'd';
-  if (x === 4) letter = 'e';
-  if (x === 5) letter = 'f';
-  if (x === 6) letter = 'g';
-  if (x === 7) letter = 'h';
-  return `${letter}${8 - y}`;
+const getSquare = (x: TileNumber, y: number): string => {
+  return `${squareMap[x]}${8 - y}`;
 };
 
 const squareInMoves = (moves: string[], square: string): boolean => {
   const move = moves.find((m) => m.includes(square));
-  if (move) return true;
-  return false;
+  return !!move;
 };
-
-const MAX_WIDTH = 1128;
-const MAX_HEIGHT = 1128;
 
 const moveHistoryRef = React.createRef<HTMLDivElement>();
 
 const Game = () => {
   // @ts-ignore
-  const [chess, setChess] = useState(new Chess());
-  const [resizeListener, sizes] = useResizeAware();
+  const [chess] = useState(new Chess());
 
   const [activeSquare, setActiveSquare] = useState<string | null>(null);
   // force update hack
-  const [, updateState] = React.useState<any>();
+  const [_, updateState] = React.useState<any>();
   const forceUpdate = React.useCallback(() => updateState({}), []);
 
   const board = chess.board();
@@ -113,22 +64,49 @@ const Game = () => {
   };
 
   const history = chess.history({ verbose: true });
+  const { height, width } = useWindowSize();
 
-  if (!sizes || !sizes.width || !sizes.height) return <div>{resizeListener}</div>;
-
-  let tileSize = sizes.height / 8;
-  if (sizes.height > sizes.width) {
-    if (sizes.width >= MAX_WIDTH) {
-      tileSize = MAX_WIDTH / 8;
+  let tileSize = 0;
+  if (height < width) {
+    if (height < breakpoint) {
+      tileSize = (height - 77) / 8;
     } else {
-      tileSize = sizes.width / 8;
+      tileSize = (height - 33) / 8;
     }
-  } else if (sizes.width >= MAX_WIDTH) {
-    tileSize = MAX_WIDTH / 8;
+  } else if (width < breakpoint) {
+    tileSize = (width - 77) / 8;
+  } else {
+    tileSize = (width - 33) / 8;
   }
 
+  const darkSquareText = 'text-yellow-600';
+  const lightSquareText = 'text-yellow-100';
+  const darkSquareBg = 'bg-yellow-600';
+  const lightSquareBg = 'bg-yellow-100';
+  const black = 'black';
+
+  const isSmallerThanBreakpoint = width < breakpoint || height < breakpoint;
+
+  const getSquareColor = (x: number, y: number, text: boolean) => {
+    if (text && isSmallerThanBreakpoint) return black;
+
+    const odd = x % 2;
+    if (y % 2) {
+      if (text) {
+        return odd ? lightSquareText : darkSquareText;
+      }
+      return odd ? lightSquareBg : darkSquareBg;
+    }
+    if (text) {
+      return odd ? darkSquareText : lightSquareText;
+    }
+    return odd ? darkSquareBg : lightSquareBg;
+  };
+
+  const labelDistance = isSmallerThanBreakpoint ? negativeDistance : positiveDistance;
+
   return (
-    <div className="grid grid-cols-1 grid-rows-game-layout">
+    <div className="grid grid-cols-1 grid-rows-game-layout" style={{ maxWidth: 8 * tileSize }}>
       <div
         className="whitespace-nowrap shadow-inner min-h-6 bg-gray-200 px-2 overflow-x-auto no-scrollbar"
         ref={moveHistoryRef}
@@ -147,32 +125,48 @@ const Game = () => {
           </span>
         ))}
       </div>
-      {resizeListener}
-      <div className="flex flex-col board-shadow relative">
+      <div className="flex flex-col relative">
         {/* TODO: memoize */}
-        <div className="absolute flex flex-col-reverse top-1 right-0 h-full z-10 w-3 text-xs md:text-sm select-none md:font-bold">
-          {[1, 2, 3, 4, 5, 6, 7, 8].map((column) => (
+        <div
+          className="absolute flex flex-col-reverse top-1 h-full z-10 w-3 text-xs md:text-sm select-none md:font-bold"
+          style={{ right: labelDistance }}
+        >
+          {Array.from({ length: 8 }, (__, i) => i + 1).map((column) => (
             <div key={column} className={`flex flex-auto ${getSquareColor(8, column, true)}`}>
               {column}
             </div>
           ))}
         </div>
-        <div className="absolute flex bottom-1 left-0 w-full z-10 h-4 text-left text-xs md:text-sm select-none md:font-bold">
-          {['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'].map((file, i) => (
+        <div
+          className="absolute flex left-0 w-full z-10 h-4 text-left text-xs md:text-sm select-none md:font-bold"
+          style={{ bottom: labelDistance }}
+        >
+          {Object.values(squareMap).map((file, i) => (
             <div key={file} className={`flex flex-auto pl-1 ${getSquareColor(i, 8, true)}`}>
               {file}
             </div>
           ))}
         </div>
-        {board.map((row: Square[], y: number) => (
+        {board.map((row: Square[], y: TileNumber) => (
           <div key={y} className="flex">
             {row.map((square, x) => {
-              const sq: string = getSquare(x, y);
+              const sq: string = getSquare(x as TileNumber, y);
               const isMove: boolean = squareInMoves(moves, sq);
               return (
                 // eslint-disable-next-line jsx-a11y/click-events-have-key-events
                 <div
-                  key={`${y}-${x}`}
+                  draggable
+                  onDragStart={() => setActiveSquare(sq)}
+                  onDragEnd={() => setActiveSquare(null)}
+                  onDragOver={(e: DragEvent<HTMLDivElement>) => {
+                    e.preventDefault();
+                  }}
+                  onDrop={(e: DragEvent<HTMLDivElement>) => {
+                    e.preventDefault();
+                    makeMove(sq);
+                  }}
+                  id={sq}
+                  key={sq}
                   className={`flex justify-center outline-none relative ${getSquareColor(
                     x,
                     y,
